@@ -116,7 +116,6 @@ jobs:
             echo "This job always runs (no requires clause)"
 
 workflows:
-  version: 2
   
   test-requires-logic:
     jobs:
