@@ -127,22 +127,10 @@ workflows:
       - job-random
       - notify:
           requires:
-            - job-success: 
-                - failed
-                - canceled
-                - success
-            - job-fail:
-                - failed
-                - canceled
-                - success
-            - job-fail-2:
-                - failed
-                - canceled
-                - success
-            - job-random:
-                - failed
-                - canceled
-                - success
+            - job-success: [failed, canceled, success]
+            - job-fail: [failed, canceled, success]
+            - job-fail-2: [failed, canceled, success]
+            - job-random: [failed, canceled, success]
       - on-success-job:
           requires:
             - job-success: success
