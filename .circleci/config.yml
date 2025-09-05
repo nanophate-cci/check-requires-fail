@@ -89,10 +89,22 @@ workflows:
       - job-random
       - notify-single-failure:
           requires:
-            - job-success: failed
-            - job-fail: failed
-            - job-fail-2: failed
-            - job-random: failed
+            - job-success: 
+                - failed
+                - canceled
+                - success
+            - job-fail:
+                - failed
+                - canceled
+                - success
+            - job-fail-2:
+                - failed
+                - canceled
+                - success
+            - job-random:
+                - failed
+                - canceled
+                - success
       - on-success-job:
           requires:
             - job-success: success
