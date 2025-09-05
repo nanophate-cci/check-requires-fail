@@ -1,0 +1,98 @@
+version: 2.1
+
+jobs:
+  job-success:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - run:
+          name: Successful job
+          command: |
+            echo "This job will succeed"
+            echo "job-success: SUCCESS" > status.txt
+
+  job-fail:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - run:
+          name: Failing job
+          command: |
+            echo "This job will fail"
+            echo "job-fail: FAILED" > status.txt
+            exit 1
+
+  job-fail-2:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - run:
+          name: Another failing job
+          command: |
+            echo "This job will also fail"
+            echo "job-fail-2: FAILED" > status.txt
+            exit 1
+
+  job-random:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - run:
+          name: Random outcome job
+          command: |
+            RANDOM_NUM=$((RANDOM % 2))
+            if [ $RANDOM_NUM -eq 0 ]; then
+              echo "Random job succeeded!"
+              exit 0
+            else
+              echo "Random job failed!"
+              exit 1
+            fi
+
+  notify-single-failure:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - run:
+          name: Handle single job failure
+          command: |
+            echo "🚨 Job failed! Running failure handler..."
+            echo "This job runs because a specific job failed"
+
+  on-success-job:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - run:
+          name: Success handler
+          command: |
+            echo "✅ Previous job succeeded!"
+
+  always-run-job:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - run:
+          name: Always executes
+          command: |
+            echo "This job always runs (no requires clause)"
+
+workflows:
+  version: 2
+  
+  test-requires-logic:
+    jobs:
+      - always-run-job
+      - job-success
+      - job-fail
+      - job-fail-2
+      - job-random
+      - notify-single-failure:
+          requires:
+            - job-success: failed
+            - job-fail: failed
+            - job-fail-2: failed
+            - job-random: failed
+      - on-success-job:
+          requires:
+            - job-success: success
