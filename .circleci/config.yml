@@ -54,11 +54,6 @@ jobs:
       - image: cimg/base:current
     steps:
       - run:
-          name: Install dependencies
-          command: |
-            sudo apt-get update
-            sudo apt-get install -y jq curl
-      - run:
           name: Check job statuses using CircleCI API
           command: |
             echo "=== Checking Job Statuses via API ==="
