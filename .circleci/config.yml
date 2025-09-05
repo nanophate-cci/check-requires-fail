@@ -49,15 +49,58 @@ jobs:
               exit 1
             fi
 
-  notify-single-failure:
+  notify:
     docker:
       - image: cimg/base:current
     steps:
       - run:
-          name: Handle single job failure
+          name: Install dependencies
           command: |
-            echo "🚨 Job failed! Running failure handler..."
-            echo "This job runs because a specific job failed"
+            sudo apt-get update
+            sudo apt-get install -y jq curl
+      - run:
+          name: Check job statuses using CircleCI API
+          command: |
+            echo "=== Checking Job Statuses via API ==="
+            
+            # Requires CIRCLE_TOKEN to be set as environment variable
+            if [ -z "$CIRCLE_TOKEN" ]; then
+              echo "⚠️  CIRCLE_TOKEN not set, using workspace method instead"
+              exit 0
+            fi
+            
+            # Get workflow jobs
+            WORKFLOW_JOBS=$(curl -s -H "Circle-Token: ${CIRCLE_TOKEN}" \
+              "https://circleci.com/api/v2/workflow/${CIRCLE_WORKFLOW_ID}/job" | jq -r '.items[]')
+            
+            # Count failures
+            FAILED_COUNT=$(echo "$WORKFLOW_JOBS" | jq -r 'select(.status == "failed") | .name' | wc -l)
+            SUCCESS_COUNT=$(echo "$WORKFLOW_JOBS" | jq -r 'select(.status == "success") | .name' | wc -l)
+            
+            echo "Failed jobs: $FAILED_COUNT"
+            echo "Successful jobs: $SUCCESS_COUNT"
+            
+            # IF-ELSE based on API results
+            if [ "$FAILED_COUNT" -eq 0 ]; then
+              echo "✅ No failures detected via API"
+            else
+              echo "❌ $FAILED_COUNT job(s) failed"
+              
+              # List failed jobs
+              echo "Failed jobs:"
+              echo "$WORKFLOW_JOBS" | jq -r 'select(.status == "failed") | "  - \(.name)"'
+              
+              # Different actions based on failure count
+              if [ "$FAILED_COUNT" -ge 3 ]; then
+                echo "🚨 Critical: 3 or more failures - escalating..."
+              elif [ "$FAILED_COUNT" -eq 2 ]; then
+                echo "⚠️  Warning: 2 failures - sending alert..."
+              else
+                echo "ℹ️  Notice: 1 failure - logging incident..."
+              fi
+              
+              exit 1
+            fi
 
   on-success-job:
     docker:
@@ -87,7 +130,7 @@ workflows:
       - job-fail
       - job-fail-2
       - job-random
-      - notify-single-failure:
+      - notify:
           requires:
             - job-success: 
                 - failed
